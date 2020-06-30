@@ -47,16 +47,17 @@ ui <- fluidPage(
             #sliderInput("learning_rate", "Mean learning rate (scales value of occurrence; truncated at .1):", 
             #            min = .5, max = 10, value = 1, step=.5),
             
-            sliderInput("proc_speed_asymp", div(HTML("Adult processing speed asymptote mean (<em>a</em>; scales value of occurrence; truncated at .01):")), 
-                        min = .01, max = 1, value = .56, step=.01),
-            sliderInput("proc_speed_asymp_sd", div(HTML("Adult processing speed <em>a</em> SD:")), 
-                        min = 0, max = 1, value = .1, step=.01),
+          #  sliderInput("proc_speed_asymp", div(HTML("Adult processing speed asymptote mean (<em>a</em>; scales value of occurrence; truncated at .01):")), 
+                      #  min = .01, max = 1, value = .56, step=.01),
+           # sliderInput("proc_speed_asymp_sd", div(HTML("Adult processing speed <em>a</em> SD:")), 
+                      #  min = 0, max = 1, value = .1, step=.01),
             
-            sliderInput("proc_speed_dev", "Processing speed rate of development mean (c):", 
-                        min = 0, max = 1, value = 0.72, step= 0.02),
-            sliderInput("proc_speed_dev_sd", "Processing speed rate SD:",
-                        min = 0, max = 1, value = .1, step=.01),
-            
+            #sliderInput("proc_speed_dev", "Processing speed rate of development mean (c):", 
+                       # min = 0, max = 1, value = 0.72, step= 0.02),
+           # sliderInput("proc_speed_dev_sd", "Processing speed rate SD:",
+                    #    min = 0, max = 1, value = .1, step=.01),
+           sliderInput("x_range", "Range of x-axis:",
+                        min=0, max = 50, value = c(0,50), step = 10),
             checkboxInput("proc_facilitates", "Processing facilitates acquisition", FALSE)
         ),
 
@@ -64,11 +65,22 @@ ui <- fluidPage(
         mainPanel(
             tabsetPanel(type = "tabs", id="tabs", 
                 tabPanel("Vocabulary Growth", 
+                         sliderInput("y_range", "Range of y-axis:",
+                                     min=0, max = 8000, value = c(0,8000), step = 2000),
                          plotOutput("ageVocab"), 
                          br(),
                          textOutput("acceleration")
                     ),
                 tabPanel("Processing Speed", 
+                         sliderInput("proc_speed_asymp", div(HTML("Adult processing speed asymptote mean (<em>a</em>; scales value of occurrence; truncated at .01):")), 
+                                     min = .01, max = 1, value = .56, step=.01),
+                         sliderInput("proc_speed_asymp_sd", div(HTML("Adult processing speed <em>a</em> SD:")), 
+                                     min = 0, max = 1, value = .1, step=.01),
+                         
+                         sliderInput("proc_speed_dev", "Processing speed rate of development mean (c):", 
+                                     min = 0, max = 1, value = 0.72, step= 0.02),
+                         sliderInput("proc_speed_dev_sd", "Processing speed rate SD:",
+                                     min = 0, max = 1, value = .1, step=.01),
                          plotOutput("ageRT")
                     ),
                 tabPanel("Vocabulary Growth Table", 
@@ -128,7 +140,8 @@ server <- function(input, output) {
             # labs(colour="Quantile") + 
             xlab("Age (months)") + 
             ylab("Vocabulary Size") + #ylim(0, vocab_size) +
-            xlim(1, max_age) +
+            xlim(input$x_range[1], input$x_range[2]) +
+            ylim(input$y_range[1], input$y_range[2]) +
             geom_line(aes(x = month, y = cdi_words, group = id), alpha=.1, color = "red") +
             geom_smooth(aes(x = month, y = cdi_words), color="red")
             # geom_point(alpha=.1) +
@@ -156,7 +169,7 @@ server <- function(input, output) {
             #geom_smooth(aes(x=month, y=words), color="black") + 
             xlab("Age (months)") + 
             ylab("Proportion of Learners Knowing Word") +
-            xlim(1, max_age) + ylim(0,1)
+            xlim(input$x_range[1], input$x_range[2]) + ylim(0,1)
     })
     
     output$cdi_vs_full <- renderPlot({
@@ -175,7 +188,7 @@ server <- function(input, output) {
             labs(colour="Quantile") + geom_smooth() + 
             #geom_abline(intercept=0, slope=input$vocab_size/input$max_age, linetype="dashed", color="grey", size=1) + 
             xlab("Age (months)") + ylab("Response Time (seconds)") + 
-            xlim(1, max_age) + ylim(0,1.7)
+            xlim(input$x_range[1], input$x_range[2]) + ylim(0,1.7)
         #print(sim_data()$proc_speed)
     })
     
