@@ -25,9 +25,13 @@ ui <- fluidPage(
             setSliderColor(c("Black", # start_age
                              "DarkSlateGrey", "DarkSlateGrey", # Input
                              "DeepSkyBlue", "DeepSkyBlue", # Word Threshold
-                             "DeepPink", "DeepPink", # Proc Speed Adult Asymptote
-                             "DarkRed", "DarkRed"), # Proc Speed Rate of Development
-                           c(1, 2,3, 4,5, 6,7, 8,9)), # color code param means and SDs
+                             "Green", "Green", # axes
+                             "DarkPink", "DarkPink", # Proc Speed Adult Asymptote
+                             "DarkRed", "DarkRed", # Proc Speed Rate of Development
+                             "Green", "Green",
+                             "Green", "Green",
+                             "Green", "Green"), 
+                           c(1, 2,3, 4,5, 6,7, 8,9, 10,11, 12,13, 14,15, 16,17)), # color code param means and SDs
             sliderInput("start_age", "Age (mos) when words start accumulating (e.g., age to segmentation):", 
                         min=1, max=8, value=1, step=1), 
             # best-fitting parms for start_age=1 logzipf: c(204, 2436, 6937, 2127, 0.56, 0.03, 0.72, 0.21)
@@ -46,18 +50,16 @@ ui <- fluidPage(
             
             #sliderInput("learning_rate", "Mean learning rate (scales value of occurrence; truncated at .1):", 
             #            min = .5, max = 10, value = 1, step=.5),
-            
-          #  sliderInput("proc_speed_asymp", div(HTML("Adult processing speed asymptote mean (<em>a</em>; scales value of occurrence; truncated at .01):")), 
-                      #  min = .01, max = 1, value = .56, step=.01),
+        
+        # move to the main panel
+           #  sliderInput("proc_speed_asymp", div(HTML("Adult processing speed asymptote mean (<em>a</em>; scales value of occurrence; truncated at .01):")), 
+                       # min = .01, max = 1, value = .56, step=.01),
            # sliderInput("proc_speed_asymp_sd", div(HTML("Adult processing speed <em>a</em> SD:")), 
-                      #  min = 0, max = 1, value = .1, step=.01),
-            
-            #sliderInput("proc_speed_dev", "Processing speed rate of development mean (c):", 
+                       # min = 0, max = 1, value = .1, step=.01),
+           # sliderInput("proc_speed_dev", "Processing speed rate of development mean (c):", 
                        # min = 0, max = 1, value = 0.72, step= 0.02),
            # sliderInput("proc_speed_dev_sd", "Processing speed rate SD:",
-                    #    min = 0, max = 1, value = .1, step=.01),
-           sliderInput("x_range", "Range of x-axis:",
-                        min=0, max = 50, value = c(0,50), step = 10),
+                       # min = 0, max = 1, value = .1, step=.01),
             checkboxInput("proc_facilitates", "Processing facilitates acquisition", FALSE)
         ),
 
@@ -65,23 +67,52 @@ ui <- fluidPage(
         mainPanel(
             tabsetPanel(type = "tabs", id="tabs", 
                 tabPanel("Vocabulary Growth", 
-                         sliderInput("y_range", "Range of y-axis:",
-                                     min=0, max = 8000, value = c(0,8000), step = 2000),
+                        # sliderInput("y_range", "Range of y-axis:",
+                                     #min=0, max = 8000, value = c(0,8000), step = 2000),
                          plotOutput("ageVocab"), 
                          br(),
-                         textOutput("acceleration")
+                         textOutput("acceleration"),
+                         # flexible axes
+                         fluidRow(
+                             column(6,
+                                    sliderInput("x_range", "Age of children (months)",
+                                                min=0, max = 50, value = c(0,50), step = 10)),
+                        column(6,
+                               sliderInput("y_range", "Vocabulary Size",
+                                           min=0, max = 8000, value = c(0,8000), step = 2000))
+                             ),
+                        br()
                     ),
                 tabPanel("Processing Speed", 
-                         sliderInput("proc_speed_asymp", div(HTML("Adult processing speed asymptote mean (<em>a</em>; scales value of occurrence; truncated at .01):")), 
-                                     min = .01, max = 1, value = .56, step=.01),
-                         sliderInput("proc_speed_asymp_sd", div(HTML("Adult processing speed <em>a</em> SD:")), 
-                                     min = 0, max = 1, value = .1, step=.01),
-                         
-                         sliderInput("proc_speed_dev", "Processing speed rate of development mean (c):", 
-                                     min = 0, max = 1, value = 0.72, step= 0.02),
-                         sliderInput("proc_speed_dev_sd", "Processing speed rate SD:",
-                                     min = 0, max = 1, value = .1, step=.01),
-                         plotOutput("ageRT")
+                         fluidRow(
+                            column(3,
+                                  sliderInput("proc_speed_asymp", 
+                                 div(HTML("Adult processing speed asymptote mean (<em>a</em>; scales value of occurrence; truncated at .01):")), 
+                                 min = .01, max = 1, value = .56, step=.01)
+                         ), 
+                         column(3,
+                                sliderInput("proc_speed_asymp_sd", div(HTML("Adult processing speed <em>a</em> SD:")), 
+                                            min = 0, max = 1, value = .1, step=.01)
+                         ), 
+                         column(3,
+                                sliderInput("proc_speed_dev", "Processing speed rate of development mean (c):", 
+                                            min = 0, max = 1, value = 0.72, step= 0.02)
+                         ), 
+                         column(3,
+                                sliderInput("proc_speed_dev_sd", 
+                                            min = 0, max = 1, value = .1, step=.01, "Processing speed rate SD:")
+                         )
+               ),
+                         plotOutput("ageRT"),
+                         fluidRow(
+                             column(6,
+                                    sliderInput("x_range1", "Age of children (months)",
+                                                min=0, max = 50, value = c(0,50), step = 10)),
+                             column(6,
+                                    sliderInput("y_range1", "Response time",
+                                                min=0, max = 1.5, value = c(0,1.5), step = 0.1))
+                         ),
+                         br()
                     ),
                 tabPanel("Vocabulary Growth Table", 
                          textOutput("summary"), 
@@ -95,16 +126,37 @@ ui <- fluidPage(
                     ),
                 tabPanel("Growth per Word",
                          plotOutput("ageWord"),
+                         fluidRow(
+                             column(6,
+                                    sliderInput("x_range3", "Age of children (months)",
+                                                min=0, max = 50, value = c(0,50), step = 10)),
+                             column(6,
+                                    sliderInput("y_range3", "Proportion of learners knowing words",
+                                                min=0, max = 1, value = c(0,1), step = 0.1))
+                         ),
+                         br(),
                          br()), # add selector(s) to show particular words
+               tabPanel("PoS",
+                        plotOutput("acqpos"),
+                        br(),
+                        br()),
                 tabPanel("CDI vs. Full Vocab",
                          plotOutput("cdi_vs_full"),
+                         fluidRow(
+                             column(6,
+                                    sliderInput("x_range2", "CDI words known",
+                                                min=0, max = 700, value = c(0,700), step = 200)),
+                             column(6,
+                                    sliderInput("y_range2", "Total vocabulary",
+                                                min=0, max = 8000, value = c(0,8000), step = 2000))
+                         ),
+                         br(),
                          br() # also show correlation of CDI and full, and mean words outside of CDI known (per age?)
                          )
             )
         )
     )
 )
-
 
 # server logic
 server <- function(input, output) {
@@ -148,6 +200,45 @@ server <- function(input, output) {
             # geom_abline(intercept=0, slope=input$vocab_size/input$max_age, linetype="dashed", color="grey", size=1) 
     })
     
+    output$acqpos <- renderPlot({
+        dw <- sim_data()$pos_acq # need to make this long
+        for (i in length(dw)) {
+            if(str_detect(rownames(dw), "Other.")){
+                dw[1,] = dw[1,]+dw[i,]
+            } else if (str_detect(rownames(dw), "Verb.")){
+                dw[10,] = dw[10,]+dw[i,]
+            } else if (str_detect(rownames(dw), "Adjective.")){
+                dw[54,] = dw[54,]+dw[i,]
+            } else if (str_detect(rownames(dw), "Noun.")){
+                dw[23,] = dw[23,]+dw[i,]
+            } 
+        }
+        
+        for (i in 1:48) {
+            dw[1,i] = dw[1,i]/918
+            dw[10,i] = dw[10,i]/1633
+            dw[54,i] = dw[54,i]/739
+            dw[23,i] = dw[23,i]/3914
+        }
+        
+        dl = data.frame(dw)
+        dl2 <- dl[c(1,10,54,23),]
+        
+        names(dl2) = 1:max_age
+        dl2$PoS = rownames(dl2)
+        dl2 = gather(dl2, "month", "pos_know", 1:max_age) 
+        dl2$month = as.numeric(as.character(dl2$month))
+        
+        # select a small number of words..use selectizeInput ?
+        ggplot(dl2,aes(x=month, y=pos_know)) + 
+            geom_line(aes(group = PoS, color=PoS), alpha = .8) + 
+            #geom_smooth(aes(x=month, y=words), color="black") + 
+            xlab("Age (months)") + 
+            ylab("Acquisition") 
+           # xlim(input$x_range3[1], input$x_range3[2]) +
+           # ylim(input$y_range3[1], input$y_range3[2]) 
+    })
+    
     # show proportion of learners knowing each word over time
     # (could also create a table of mean AoA per word)
     output$ageWord <- renderPlot({
@@ -169,7 +260,9 @@ server <- function(input, output) {
             #geom_smooth(aes(x=month, y=words), color="black") + 
             xlab("Age (months)") + 
             ylab("Proportion of Learners Knowing Word") +
-            xlim(input$x_range[1], input$x_range[2]) + ylim(0,1)
+            xlim(input$x_range3[1], input$x_range3[2]) +
+            ylim(input$y_range3[1], input$y_range3[2]) 
+           # xlim(input$x_range[1], input$x_range[2]) + ylim(0,1)
     })
     
     output$cdi_vs_full <- renderPlot({
@@ -178,7 +271,9 @@ server <- function(input, output) {
         ggplot(dat, aes(x=cdi_words, y=words)) + 
             xlab("CDI Words Known") + ylab("Total Vocabulary") +
             #facet_wrap(~ age_group, nrow=4) +
-            geom_line(aes(group=id), alpha=.1) + geom_smooth() # , color=age_group
+            geom_line(aes(group=id), alpha=.1) + geom_smooth() +
+            xlim(input$x_range2[1], input$x_range2[2]) +
+            ylim(input$y_range2[1], input$y_range2[2]) # , color=age_group
     })
     
     output$ageRT <- renderPlot({
@@ -188,7 +283,9 @@ server <- function(input, output) {
             labs(colour="Quantile") + geom_smooth() + 
             #geom_abline(intercept=0, slope=input$vocab_size/input$max_age, linetype="dashed", color="grey", size=1) + 
             xlab("Age (months)") + ylab("Response Time (seconds)") + 
-            xlim(input$x_range[1], input$x_range[2]) + ylim(0,1.7)
+            xlim(input$x_range1[1], input$x_range1[2]) +
+            ylim(input$y_range1[1], input$y_range1[2]) 
+            #+ ylim(0,1.7)
         #print(sim_data()$proc_speed)
     })
     

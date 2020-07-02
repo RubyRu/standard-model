@@ -3,17 +3,19 @@ n_learners = 100
 max_age = 48 # months
 
 wf = read.csv("data/childes_english_word_freq_cleaned.csv")
-
+pos = read.csv("data/POSEnglish.csv", sep=';', stringsAsFactors = F)
+pos2<-pos
+pos2$PoS <- as.factor(pos2$PoS)
+pos2$word <- as.factor(pos2$word)
+wf = pos2 %>% # SUBTLWF = frequency per million words
+  right_join(wf, by="word")
 # indices of CDI items
 cdi_idx = which(wf$on_cdi==1)
 
 vocab_size = nrow(wf) # 10190
-waking_hours_per_day = 12
+waking_hours_per_day = 12 # eventually make normally-distributed (if we can find literature on sleeping time)
 
 
-sigmoid <- function(x) {
-  return( 1 / (1 + exp(-x)) )
-}
 
 acceleration_test <- function(dat) {
   d = dat$known_words %>% filter(month>11 & month<25) %>% group_by(month) %>% summarize(mean=mean(words)) 
@@ -44,6 +46,7 @@ make_long_df <- function(df, n_learners, max_age) {
 #  max_age=48, mean_learning_rate, learning_rate_sd, threshold_sd, 
 #  proc_facilitates, proc_speed_dev, proc_speed_dev_sd) {
 
+# call this once whenever proc_speed parms change?
 get_proc_speed <- function(print_plot=F) {
   a = rnorm(n_learners, mean=.56, sd=.1) # individual adult asymptotes for proc speed
   c = rnorm(n_learners, mean=.72, sd=.1)
@@ -73,14 +76,12 @@ get_proc_speed <- function(print_plot=F) {
 simulate <- function(parms) {
   if(parms$distro=="uniform") {
     probs = rep(1/vocab_size, vocab_size)
-  } else { # "zipf"
-    #probs = 1 / (1:vocab_size + 2.7) # f(r) = 1 / (r+beta)^alpha, alpha=1, beta=2.7 (Mandelbrot, 1953, 1962)
-    #probs = probs/sum(probs)
-    #probs = sample(probs, length(probs)) 
+  } else if(parms$distro=="zipf") {
     probs = wf$word_count / sum(wf$word_count) # based on CHILDES WF distro
-  }
-  if(parms$distro=="logzipf") {
+  } else if(parms$distro=="logzipf") {
     probs = log(wf$word_count) / sum(log(wf$word_count))
+  } else {
+    print("error")
   }
   start_age = parms$start_age # age (months) at which words start accumulating 
   input_rate = rnorm(n_learners, mean=parms$input_rate, sd=parms$input_rate_sd) # per-child variability in input rate
@@ -110,6 +111,9 @@ simulate <- function(parms) {
   prop_knowing_word = matrix(0, nrow=vocab_size, ncol=max_age)
   rownames(prop_knowing_word) = wf$word
   
+  # proportion of children knowing each category of word per age
+  pos_acq = matrix(0, nrow=vocab_size, ncol=max_age)
+  rownames(pos_acq) = wf$PoS
   # processing speed - each of these parameters could have individual variability
   # Kail (1991): RT slopes follow an exponential, such that Y(i) = a + b*exp(−c*i), where Y=predicted var, i=age (mos? year?). 
   #a = 0.56 # eventual (adult) asymptote VARIABILITY HERE
@@ -153,6 +157,7 @@ simulate <- function(parms) {
     known_words[,t] = rowSums(cumulative_word_occs>threshold) # does this do colwise comparison??
     known_cdi_words[,t] = rowSums(cumulative_word_occs[,cdi_idx] > threshold[cdi_idx])
     prop_knowing_word[,t] = colSums(cumulative_word_occs>threshold) / n_learners
+    pos_acq[,t] = colSums(cumulative_word_occs>threshold) / n_learners
   }
   
   # return known words and mean RT per individual per month 
@@ -165,7 +170,8 @@ simulate <- function(parms) {
   return(list(known_words = known_words_l,
               known_cdi_words = known_cdi_words_l,
               proc_speed = proc_speed_l, 
-              prop_knowing_word = prop_knowing_word))
+              prop_knowing_word = prop_knowing_word,
+              pos_acq = pos_acq))
 }
 
 
