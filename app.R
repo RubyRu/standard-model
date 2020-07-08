@@ -47,19 +47,8 @@ ui <- fluidPage(
             sliderInput("threshold_sd", "Threshold standard deviation:", 
                         min=0, max=4000, value=1000, step=100),
             helpText("McMurray (2007) used a mean of 4000 and a large SD."),
-            
             #sliderInput("learning_rate", "Mean learning rate (scales value of occurrence; truncated at .1):", 
             #            min = .5, max = 10, value = 1, step=.5),
-        
-        # move to the main panel
-           #  sliderInput("proc_speed_asymp", div(HTML("Adult processing speed asymptote mean (<em>a</em>; scales value of occurrence; truncated at .01):")), 
-                       # min = .01, max = 1, value = .56, step=.01),
-           # sliderInput("proc_speed_asymp_sd", div(HTML("Adult processing speed <em>a</em> SD:")), 
-                       # min = 0, max = 1, value = .1, step=.01),
-           # sliderInput("proc_speed_dev", "Processing speed rate of development mean (c):", 
-                       # min = 0, max = 1, value = 0.72, step= 0.02),
-           # sliderInput("proc_speed_dev_sd", "Processing speed rate SD:",
-                       # min = 0, max = 1, value = .1, step=.01),
             checkboxInput("proc_facilitates", "Processing facilitates acquisition", FALSE)
         ),
 
@@ -67,8 +56,6 @@ ui <- fluidPage(
         mainPanel(
             tabsetPanel(type = "tabs", id="tabs", 
                 tabPanel("Vocabulary Growth", 
-                        # sliderInput("y_range", "Range of y-axis:",
-                                     #min=0, max = 8000, value = c(0,8000), step = 2000),
                          plotOutput("ageVocab"), 
                          br(),
                          textOutput("acceleration"),
@@ -79,7 +66,7 @@ ui <- fluidPage(
                                                 min=0, max = 50, value = c(0,50), step = 10)),
                         column(6,
                                sliderInput("y_range", "Vocabulary Size",
-                                           min=0, max = 8000, value = c(0,8000), step = 2000))
+                                           min=0, max = 8000, value = c(0,8000), step = 1000))
                              ),
                         br()
                     ),
@@ -125,6 +112,9 @@ ui <- fluidPage(
                          br()
                     ),
                 tabPanel("Growth per Word",
+                         selectInput("selectword", "Select a word",
+                                     cdi_list,
+                                     multiple = TRUE),
                          plotOutput("ageWord"),
                          fluidRow(
                              column(6,
@@ -137,9 +127,13 @@ ui <- fluidPage(
                          br(),
                          br()), # add selector(s) to show particular words
                tabPanel("PoS",
-                        plotOutput("acqpos"),
+                       #plotOutput("agePos"),
+                       plotOutput("propPos"),
+                       br()),
+               tabPanel("Part of Speech",
+                        plotOutput("avgPoS"),
                         br(),
-                        br()),
+                        ),
                 tabPanel("CDI vs. Full Vocab",
                          plotOutput("cdi_vs_full"),
                          fluidRow(
@@ -200,43 +194,37 @@ server <- function(input, output) {
             # geom_abline(intercept=0, slope=input$vocab_size/input$max_age, linetype="dashed", color="grey", size=1) 
     })
     
-    output$acqpos <- renderPlot({
-        dw <- sim_data()$pos_acq # need to make this long
-        for (i in length(dw)) {
-            if(str_detect(rownames(dw), "Other.")){
-                dw[1,] = dw[1,]+dw[i,]
-            } else if (str_detect(rownames(dw), "Verb.")){
-                dw[10,] = dw[10,]+dw[i,]
-            } else if (str_detect(rownames(dw), "Adjective.")){
-                dw[54,] = dw[54,]+dw[i,]
-            } else if (str_detect(rownames(dw), "Noun.")){
-                dw[23,] = dw[23,]+dw[i,]
-            } 
-        }
-        
-        for (i in 1:48) {
-            dw[1,i] = dw[1,i]/918
-            dw[10,i] = dw[10,i]/1633
-            dw[54,i] = dw[54,i]/739
-            dw[23,i] = dw[23,i]/3914
-        }
-        
-        dl = data.frame(dw)
-        dl2 <- dl[c(1,10,54,23),]
-        
-        names(dl2) = 1:max_age
-        dl2$PoS = rownames(dl2)
-        dl2 = gather(dl2, "month", "pos_know", 1:max_age) 
-        dl2$month = as.numeric(as.character(dl2$month))
-        
-        # select a small number of words..use selectizeInput ?
-        ggplot(dl2,aes(x=month, y=pos_know)) + 
-            geom_line(aes(group = PoS, color=PoS), alpha = .8) + 
-            #geom_smooth(aes(x=month, y=words), color="black") + 
+    output$avgPoS <- renderPlot({
+        ggplot(sim_data()$known_PoS, aes(x=Category, y=words, fill = PoS)) + 
+            geom_bar(stat="identity") + 
             xlab("Age (months)") + 
-            ylab("Acquisition") 
-           # xlim(input$x_range3[1], input$x_range3[2]) +
-           # ylim(input$y_range3[1], input$y_range3[2]) 
+            ylab("Mean Vocabulary Size") 
+    })
+    
+    output$propPos <- renderPlot({
+        dat2 <- sim_data()$known_pos
+        ggplot(dat2, aes(x=Proportion, y=words/twords)) + 
+            xlab("Vocabulary Size") + ylab("Proportion of category") +
+            facet_wrap(~ PoS) +
+            geom_point(aes(group=id), alpha=.1) + geom_smooth() 
+    })
+    
+    output$agePos <- renderPlot({
+        colors <- c("Known Verb" = "blue", "Known Noun" = "red", "Known Other" = "orange", "Known Adj" = "green")
+        ggplot(mapping = aes(x=month, y=words)) + 
+            geom_smooth(data = sim_data()$known_verb, aes(color = "Known Verb"))+ 
+            geom_line(data = sim_data()$known_verb, aes(group = id, color = "Known Verb"), alpha = .1) + 
+            geom_smooth(data = sim_data()$known_other, aes(color = "Known Other"))+
+            geom_line(data = sim_data()$known_other, aes(group = id, color = "Known Other"), alpha = .1) + 
+            geom_smooth(data = sim_data()$known_noun, aes(color = "Known Noun"))+
+            geom_line(data = sim_data()$known_noun, aes(group = id, color = "Known Noun"), alpha = .1) + 
+            geom_smooth(data = sim_data()$known_adj, aes(color = "Known Adj"))+
+            geom_line(data = sim_data()$known_adj, aes(group = id, color = "Known Adj"), alpha = .1) + 
+            xlab("Age (months)") + 
+            ylab("Vocabulary Size") + #ylim(0, vocab_size) +
+            ylim(0, 2500) +
+            scale_color_manual(values = colors) +
+            labs(colour = "Part of Speech")
     })
     
     # show proportion of learners knowing each word over time
@@ -252,9 +240,10 @@ server <- function(input, output) {
         dl$on_cdi = wf$on_cdi
         
         # select a small number of words..use selectizeInput ?
-        plot_words = c("you", "the", "have", "wanna", "mommy", 
-                       "daddy", "book", "dog", "boy", "baby")
-        ggplot(subset(dl, is.element(word, plot_words)), 
+       # plot_words = c("you", "the", "have", "wanna", "mommy", 
+                       #"daddy", "book", "dog", "boy", "baby")
+        plot_word = c(input$selectword)
+        ggplot(subset(dl, is.element(word, plot_word)), 
                aes(x=month, y=prop_know)) + 
             geom_line(aes(group = word, color=word), alpha = .8) + 
             #geom_smooth(aes(x=month, y=words), color="black") + 
